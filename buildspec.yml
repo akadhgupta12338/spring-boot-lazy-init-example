@@ -6,17 +6,17 @@ phases:
     - echo installing maven...
     - mvn --version
     - echo Installing app dependencies such as kubectl...
-    - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.15.10/2020-02-22/bin/linux/amd64/kubectl   
+    - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl   
     - chmod +x ./kubectl
-    - mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
-    - echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
-  
+    - mv ./kubectl /usr/local/bin 
+    - kubectl version --short --client
+    
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 737376305814.dkr.ecr.ap-south-1.amazonaws.com
       - echo Logging in to Amazon EKS...
-      - aws eks --region $AWS_DEFAULT_REGION update-kubeconfig --name $AWS_CLUSTER_NAME
+      - aws eks --region ap-south-1 update-kubeconfig --name sample-demo
       
   build:
     commands:
