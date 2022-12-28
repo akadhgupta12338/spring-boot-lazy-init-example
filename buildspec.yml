@@ -35,7 +35,6 @@ phases:
       - printf '[{"name":"order-service","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
       - sed -i 's@CONTAINER_IMAGE@'"$REPOSITORY_URI:$IMAGE_TAG"'@' EKS_Deployment_from_ECR.yml
-      - cat EKS_Deployment_from_ECR.yml
       - kubectl apply -f EKS_Deployment_from_ECR.yml
       - kubectl rollout restart -f EKS_Deployment_from_ECR.yml      
 artifacts:
