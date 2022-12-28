@@ -1,39 +1,44 @@
-version: 0.1
+version: 0.2
+
 
 phases:
-  install:
-    commands:
-    - echo installing maven...
-    - mvn --version
-    - echo Installing app dependencies such as kubectl...
-    - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl   
-    - chmod +x ./kubectl
-    - mv ./kubectl /usr/local/bin 
-    - kubectl version --short --client
-    
   pre_build:
     commands:
+      - mvn clean install
+      - echo Installing app dependencies such as kubectl...
+      - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl   
+      - chmod +x ./kubectl
+      - mv ./kubectl /usr/local/bin 
+      - kubectl version --short --client      
       - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 737376305814.dkr.ecr.ap-south-1.amazonaws.com
+      - aws --version
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - REPOSITORY_URI=737376305814.dkr.ecr.ap-south-1.amazonaws.com/sample-app
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
       - echo Logging in to Amazon EKS...
-      - aws eks --region ap-south-1 update-kubeconfig --name sample-demo
-      
+      - aws eks --region ap-south-1 update-kubeconfig --name eks-demo      
+
   build:
     commands:
-      - echo Maven Build started on `date`
-      - mvn clean test package
       - echo Build started on `date`
       - echo Building the Docker image...
-      - ls -ltrh
-      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
-  
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Build completed on `date`
-      - echo Pushing the Docker image...
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
-      - ls -la
-      - echo Push the latest image to cluster
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"order-service","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
+      - sed -i 's@CONTAINER_IMAGE@'"$REPOSITORY_URI:$IMAGE_TAG"'@' EKS_Deployment_from_ECR.yml
+      - cat EKS_Deployment_from_ECR.yml
       - kubectl apply -f EKS_Deployment_from_ECR.yml
-      - kubectl rollout restart -f EKS_Deployment_from_ECR.yml
+      - kubectl rollout restart -f EKS_Deployment_from_ECR.yml      
+artifacts:
+  files:
+   - imagedefinitions.json
+   - target/order-service.jar
