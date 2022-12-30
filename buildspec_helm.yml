@@ -30,6 +30,7 @@ phases:
       - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:latest .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      
   post_build:
     commands:
       - echo Build completed on `date`
@@ -39,7 +40,9 @@ phases:
       - echo Writing image definitions file...
       - printf '[{"name":"order-service","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
-
+      - sed -i 's@ECR_REPO@'"$REPOSITORY_URI"'@' sample-app/values.yaml
+      - sed -i 's@IMAGE_TAG@'"$IMAGE_TAG"'@' sample-app/values.yaml
+      - helm upgrade --install demoapp sample-app/
 
 
 artifacts:
