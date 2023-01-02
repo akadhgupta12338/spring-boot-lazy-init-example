@@ -11,6 +11,6 @@ public class LazyService {
     }
 
     public String hello() {
-        return "hello Lazy";
+        return "Hello Lazy, Sucessfully deployed on EKS with AWS CodePipeline using helm";
     }
 }
