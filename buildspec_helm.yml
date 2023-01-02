@@ -40,9 +40,7 @@ phases:
       - echo Writing image definitions file...
       - printf '[{"name":"order-service","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
-      - sed -i 's@ECR_REPO@'"$REPOSITORY_URI"'@' sample-app/values.yaml
-      - sed -i 's@IMAGE_TAG@'"$IMAGE_TAG"'@' sample-app/values.yaml
-      - helm upgrade --install demoapp sample-app/
+      - helm upgrade --install demoapp sample-app/ --set image.tag=$IMAGE_TAG
 
 
 artifacts:
